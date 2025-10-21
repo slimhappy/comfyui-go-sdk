@@ -114,7 +114,49 @@ for msg := range ws.Messages() {
 }
 ```
 
+### Progress Tracking with Visual Progress Bar
+
+```go
+// Submit workflow
+result, err := client.QueuePrompt(ctx, workflow, nil)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Connect WebSocket for progress monitoring
+ws, err := client.ConnectWebSocket(ctx)
+if err != nil {
+    log.Fatal(err)
+}
+defer ws.Close()
+
+// Track progress with visual feedback
+for msg := range ws.Messages() {
+    if msg.Type == string(comfyui.MessageTypeProgress) {
+        data, _ := msg.GetProgressData()
+        percentage := float64(data.Value) / float64(data.Max) * 100
+        
+        // Draw progress bar
+        bar := strings.Repeat("█", int(percentage/2.5)) + 
+               strings.Repeat("░", 40-int(percentage/2.5))
+        fmt.Printf("\r⏳ [%s] %.1f%% | Step %d/%d", 
+            bar, percentage, data.Value, data.Max)
+    }
+    
+    if msg.Type == string(comfyui.MessageTypeExecuting) {
+        data, _ := msg.GetExecutingData()
+        if data.Node == nil {
+            fmt.Println("\n✅ Completed!")
+            break
+        }
+    }
+}
+
+// See examples/progress/ for a complete implementation
+```
+
 ### Upload and Use Image
+
 
 ```go
 // Upload image

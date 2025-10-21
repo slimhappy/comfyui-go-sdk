@@ -64,6 +64,15 @@ A complete, production-ready Go SDK for ComfyUI has been created at `/data/comfy
    - Queue and history management
    - Workflow from file
 
+4. **examples/progress/main.go** ⭐ NEW
+   - Visual progress bar with ASCII art
+   - Real-time progress tracking
+   - ETA calculation
+   - Detailed execution statistics
+   - Automatic image saving
+   - Complete workflow demonstration
+
+
 ### Documentation
 
 - **README.md** - Complete documentation with examples

@@ -11,7 +11,9 @@ build: ## Build all examples
 	@cd examples/basic && go build -o ../../bin/basic
 	@cd examples/websocket && go build -o ../../bin/websocket
 	@cd examples/advanced && go build -o ../../bin/advanced
+	@cd examples/progress && go build -o ../../bin/progress
 	@echo "Done! Binaries in ./bin/"
+
 
 test: ## Run tests
 	@echo "Running tests..."
@@ -27,6 +29,8 @@ examples: build ## Build and show example usage
 	@echo "  ./bin/basic      - Basic workflow submission"
 	@echo "  ./bin/websocket  - WebSocket event monitoring"
 	@echo "  ./bin/advanced   - Advanced features"
+	@echo "  ./bin/progress   - Real-time progress tracking with visual progress bar"
+
 
 clean: ## Clean build artifacts
 	@echo "Cleaning..."
