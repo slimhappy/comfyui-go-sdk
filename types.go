@@ -1,8 +1,11 @@
 package comfyui
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 )
+
 
 // Workflow represents a ComfyUI workflow (prompt)
 type Workflow map[string]Node
@@ -48,12 +51,95 @@ type QueueItem struct {
 // History represents execution history
 type History map[string]HistoryItem
 
+// PromptArray represents the prompt array structure returned by ComfyUI history API
+// Structure: [number, prompt_id, workflow, extra_data, outputs_to_execute]
+type PromptArray struct {
+	Number              float64                `json:"-"`
+	PromptID            string                 `json:"-"`
+	Workflow            Workflow               `json:"-"`
+	ExtraData           map[string]interface{} `json:"-"`
+	OutputsToExecute    []string               `json:"-"`
+	rawArray            []interface{}
+}
+
+// UnmarshalJSON implements custom JSON unmarshaling for PromptArray
+func (p *PromptArray) UnmarshalJSON(data []byte) error {
+	var arr []interface{}
+	if err := json.Unmarshal(data, &arr); err != nil {
+		return err
+	}
+
+	p.rawArray = arr
+	if len(arr) < 3 {
+		return fmt.Errorf("prompt array too short: expected at least 3 elements, got %d", len(arr))
+	}
+
+	// Parse number (index 0)
+	if num, ok := arr[0].(float64); ok {
+		p.Number = num
+	}
+
+	// Parse prompt_id (index 1)
+	if id, ok := arr[1].(string); ok {
+		p.PromptID = id
+	}
+
+	// Parse workflow (index 2)
+	if workflowData, ok := arr[2].(map[string]interface{}); ok {
+		workflow := make(Workflow)
+		for k, v := range workflowData {
+			if nodeData, ok := v.(map[string]interface{}); ok {
+				node := Node{}
+				if classType, ok := nodeData["class_type"].(string); ok {
+					node.ClassType = classType
+				}
+				if inputs, ok := nodeData["inputs"].(map[string]interface{}); ok {
+					node.Inputs = inputs
+				}
+				workflow[k] = node
+			}
+		}
+		p.Workflow = workflow
+	}
+
+	// Parse extra_data (index 3)
+	if len(arr) > 3 {
+		if extraData, ok := arr[3].(map[string]interface{}); ok {
+			p.ExtraData = extraData
+		}
+	}
+
+	// Parse outputs_to_execute (index 4)
+	if len(arr) > 4 {
+		if outputs, ok := arr[4].([]interface{}); ok {
+			p.OutputsToExecute = make([]string, 0, len(outputs))
+			for _, output := range outputs {
+				if str, ok := output.(string); ok {
+					p.OutputsToExecute = append(p.OutputsToExecute, str)
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements custom JSON marshaling for PromptArray
+func (p *PromptArray) MarshalJSON() ([]byte, error) {
+	if p.rawArray != nil {
+		return json.Marshal(p.rawArray)
+	}
+	arr := []interface{}{p.Number, p.PromptID, p.Workflow, p.ExtraData, p.OutputsToExecute}
+	return json.Marshal(arr)
+}
+
 // HistoryItem represents a single history entry
 type HistoryItem struct {
-	Prompt  Workflow              `json:"prompt"`
+	Prompt  PromptArray           `json:"prompt"`
 	Outputs map[string]NodeOutput `json:"outputs"`
 	Status  HistoryStatus         `json:"status"`
 }
+
 
 // HistoryStatus represents the status of a history item
 type HistoryStatus struct {
