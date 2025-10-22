@@ -18,7 +18,7 @@ A comprehensive Go SDK for interacting with ComfyUI API.
 ## Installation
 
 ```bash
-go get github.com/yourusername/comfyui-go-sdk
+go get github.com/slimhappy/comfyui-go-sdk
 ```
 
 ## Quick Start
