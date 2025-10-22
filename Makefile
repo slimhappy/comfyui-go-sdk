@@ -12,7 +12,9 @@ build: ## Build all examples
 	@cd examples/websocket && go build -o ../../bin/websocket
 	@cd examples/advanced && go build -o ../../bin/advanced
 	@cd examples/progress && go build -o ../../bin/progress
+	@cd examples/execute_from_json && go build -o ../../bin/execute_from_json
 	@echo "Done! Binaries in ./bin/"
+
 
 
 test: ## Run tests
@@ -26,10 +28,12 @@ examples: build ## Build and show example usage
 	@echo "Examples built successfully!"
 	@echo ""
 	@echo "Run examples:"
-	@echo "  ./bin/basic      - Basic workflow submission"
-	@echo "  ./bin/websocket  - WebSocket event monitoring"
-	@echo "  ./bin/advanced   - Advanced features"
-	@echo "  ./bin/progress   - Real-time progress tracking with visual progress bar"
+	@echo "  ./bin/basic             - Basic workflow submission"
+	@echo "  ./bin/websocket         - WebSocket event monitoring"
+	@echo "  ./bin/advanced          - Advanced features"
+	@echo "  ./bin/progress          - Real-time progress tracking with visual progress bar"
+	@echo "  ./bin/execute_from_json - Execute workflow from JSON file"
+
 
 
 clean: ## Clean build artifacts
@@ -58,5 +62,11 @@ install: ## Install the SDK
 	@echo "Installing SDK..."
 	@go install
 	@echo "Done!"
+
+build-execute-json: ## Build execute_from_json example only
+	@echo "Building execute_from_json example..."
+	@mkdir -p bin
+	@cd examples/execute_from_json && go build -o ../../bin/execute_from_json
+	@echo "Done! Binary: ./bin/execute_from_json"
 
 .DEFAULT_GOAL := help

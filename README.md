@@ -7,11 +7,13 @@ A comprehensive Go SDK for interacting with ComfyUI API.
 - ✅ HTTP REST API client
 - ✅ WebSocket client for real-time updates
 - ✅ Workflow submission and management
+- ✅ **Load and execute workflows from JSON files**
 - ✅ Queue management
 - ✅ History tracking
 - ✅ Image upload and download
 - ✅ System information queries
 - ✅ Type-safe API
+
 
 ## Installation
 
@@ -20,6 +22,35 @@ go get github.com/yourusername/comfyui-go-sdk
 ```
 
 ## Quick Start
+
+### Method 1: Execute Workflow from JSON File (Easiest!)
+
+```go
+package main
+
+import (
+    "context"
+    "log"
+    
+    comfyui "github.com/yourusername/comfyui-go-sdk"
+)
+
+func main() {
+    // Create client
+    client := comfyui.NewClient("http://127.0.0.1:8188")
+    ctx := context.Background()
+    
+    // Execute workflow directly from JSON file
+    result, err := client.QueuePromptFromFile(ctx, "workflow.json", nil)
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    log.Printf("Workflow queued: %s", result.PromptID)
+}
+```
+
+### Method 2: Load, Modify, and Execute
 
 ```go
 package main
@@ -41,6 +72,10 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
+    
+    // Modify workflow parameters
+    workflow.SetNodeInput("3", "seed", 12345)
+    workflow.SetNodeInput("3", "steps", 30)
     
     // Submit workflow
     ctx := context.Background()
@@ -66,9 +101,40 @@ func main() {
 }
 ```
 
+
 ## Usage Examples
 
+### Execute Workflow from JSON File
+
+```go
+// Method 1: Direct execution
+client := comfyui.NewClient("http://127.0.0.1:8188")
+result, err := client.QueuePromptFromFile(context.Background(), "workflow.json", nil)
+
+// Method 2: Load and modify before execution
+workflow, err := comfyui.LoadWorkflowFromFile("workflow.json")
+if err != nil {
+    log.Fatal(err)
+}
+
+// Modify parameters
+workflow.SetNodeInput("3", "seed", 42)
+workflow.SetNodeInput("6", "text", "beautiful landscape")
+
+// Execute
+result, err := client.QueuePrompt(context.Background(), workflow, nil)
+```
+
+**How to get workflow JSON:**
+1. Open ComfyUI web interface
+2. Create your workflow
+3. Click **File → Export (API Format)**
+4. Save as `workflow.json`
+
+See [examples/execute_from_json](examples/execute_from_json/README.md) for a complete CLI tool with progress tracking!
+
 ### Basic Workflow Submission
+
 
 ```go
 client := comfyui.NewClient("http://127.0.0.1:8188")
@@ -242,10 +308,14 @@ if err != nil {
 
 #### Workflow Operations
 - `QueuePrompt(ctx, workflow, options)` - Submit workflow
+- `QueuePromptFromFile(ctx, filepath, options)` - **Load and execute workflow from JSON file**
+- `LoadWorkflowFromFile(filepath)` - Load workflow from JSON file
+- `SaveWorkflowToFile(workflow, filepath)` - Save workflow to JSON file
 - `WaitForCompletion(ctx, promptID)` - Wait for workflow completion
 - `GetHistory(ctx, promptID)` - Get execution history
 - `ClearHistory(ctx)` - Clear all history
 - `DeleteHistory(ctx, promptIDs)` - Delete specific history
+
 
 #### Queue Management
 - `GetQueue(ctx)` - Get queue status
@@ -280,11 +350,66 @@ comfyui-go-sdk/
 ├── workflow.go        # Workflow utilities
 ├── errors.go          # Error definitions
 ├── examples/          # Usage examples
-│   ├── basic/
-│   ├── websocket/
-│   └── advanced/
+│   ├── basic/              # Basic workflow submission
+│   ├── websocket/          # WebSocket event monitoring
+│   ├── advanced/           # Advanced features
+│   ├── progress/           # Progress tracking with visual bar
+│   └── execute_from_json/  # Execute workflow from JSON file ⭐
 └── README.md
 ```
+
+## Examples
+
+All examples are located in the `examples/` directory:
+
+| Example | Description | Documentation |
+|---------|-------------|---------------|
+| **basic** | Basic workflow submission and system info | [README](examples/basic/README.md) |
+| **websocket** | Real-time event monitoring via WebSocket | [README](examples/websocket/README.md) |
+| **advanced** | Advanced features (batch, upload, etc.) | [README](examples/advanced/README.md) |
+| **progress** | Progress tracking with visual progress bar | [README](examples/progress/README.md) |
+| **execute_from_json** | Execute workflows from JSON files ⭐ | [README](examples/execute_from_json/README.md) |
+
+### Build and Run Examples
+
+```bash
+# Build all examples
+make build
+
+# Or build specific example
+make build-execute-json
+
+# Run examples
+./bin/basic
+./bin/websocket
+./bin/advanced
+./bin/progress
+./bin/execute_from_json workflow.json
+```
+
+
+## Changelog
+
+### 2025-10-22
+
+#### Bug Fixes
+- **Fixed Queue API JSON parsing error** ([QUEUE_API_BUGFIX.md](QUEUE_API_BUGFIX.md))
+  - Fixed "cannot unmarshal array into Go struct field QueueStatus.queue_running" error
+  - Added custom JSON unmarshaling for `QueueStatus` to handle array-based queue items
+  - All queue monitoring features now work correctly
+  
+- **Fixed History API JSON parsing error** ([BUGFIX_SUMMARY.md](BUGFIX_SUMMARY.md))
+  - Fixed "cannot unmarshal array into Go struct field HistoryItem.prompt" error
+  - Added custom JSON unmarshaling for `PromptArray` to handle array-based prompt data
+  - History retrieval now works correctly
+
+#### New Features
+- **Execute workflows from JSON files** ([EXECUTE_FROM_JSON_SUMMARY.md](EXECUTE_FROM_JSON_SUMMARY.md))
+  - Added `QueuePromptFromFile()` method to SDK
+  - Created complete CLI tool with progress monitoring
+  - Support for dynamic parameter modification
+  - Automatic result retrieval and image download
+  - Comprehensive documentation and examples
 
 ## Contributing
 
@@ -293,6 +418,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 MIT License
+
 
 ## Related Links
 

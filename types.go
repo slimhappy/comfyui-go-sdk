@@ -39,14 +39,108 @@ type QueueStatus struct {
 	QueuePending []QueueItem `json:"queue_pending"`
 }
 
-// QueueItem represents an item in the queue
-type QueueItem struct {
-	Number    int                    `json:"0"`
-	PromptID  string                 `json:"1"`
-	Prompt    Workflow               `json:"2"`
-	ExtraData map[string]interface{} `json:"3"`
-	Outputs   []string               `json:"4"`
+// UnmarshalJSON implements custom JSON unmarshaling for QueueStatus
+func (q *QueueStatus) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		QueueRunning [][]interface{} `json:"queue_running"`
+		QueuePending [][]interface{} `json:"queue_pending"`
+	}
+	
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	
+	// Parse running queue
+	q.QueueRunning = make([]QueueItem, 0, len(raw.QueueRunning))
+	for _, arr := range raw.QueueRunning {
+		item, err := parseQueueItemArray(arr)
+		if err != nil {
+			return fmt.Errorf("failed to parse running queue item: %w", err)
+		}
+		q.QueueRunning = append(q.QueueRunning, item)
+	}
+	
+	// Parse pending queue
+	q.QueuePending = make([]QueueItem, 0, len(raw.QueuePending))
+	for _, arr := range raw.QueuePending {
+		item, err := parseQueueItemArray(arr)
+		if err != nil {
+			return fmt.Errorf("failed to parse pending queue item: %w", err)
+		}
+		q.QueuePending = append(q.QueuePending, item)
+	}
+	
+	return nil
 }
+
+// QueueItem represents an item in the queue
+// Structure: [number, prompt_id, workflow, extra_data, outputs_to_execute]
+type QueueItem struct {
+	Number    int                    `json:"-"`
+	PromptID  string                 `json:"-"`
+	Prompt    Workflow               `json:"-"`
+	ExtraData map[string]interface{} `json:"-"`
+	Outputs   []string               `json:"-"`
+}
+
+// parseQueueItemArray parses a queue item from an array
+func parseQueueItemArray(arr []interface{}) (QueueItem, error) {
+	if len(arr) < 3 {
+		return QueueItem{}, fmt.Errorf("queue item array too short: expected at least 3 elements, got %d", len(arr))
+	}
+	
+	item := QueueItem{}
+	
+	// Parse number (index 0)
+	if num, ok := arr[0].(float64); ok {
+		item.Number = int(num)
+	}
+	
+	// Parse prompt_id (index 1)
+	if id, ok := arr[1].(string); ok {
+		item.PromptID = id
+	}
+	
+	// Parse workflow (index 2)
+	if promptMap, ok := arr[2].(map[string]interface{}); ok {
+		workflow := make(Workflow)
+		for k, v := range promptMap {
+			if nodeMap, ok := v.(map[string]interface{}); ok {
+				node := Node{}
+				if classType, ok := nodeMap["class_type"].(string); ok {
+					node.ClassType = classType
+				}
+				if inputs, ok := nodeMap["inputs"].(map[string]interface{}); ok {
+					node.Inputs = inputs
+				}
+				workflow[k] = node
+			}
+		}
+		item.Prompt = workflow
+	}
+	
+	// Parse extra_data (index 3)
+	if len(arr) > 3 {
+		if extraData, ok := arr[3].(map[string]interface{}); ok {
+			item.ExtraData = extraData
+		}
+	}
+	
+	// Parse outputs_to_execute (index 4)
+	if len(arr) > 4 {
+		if outputs, ok := arr[4].([]interface{}); ok {
+			item.Outputs = make([]string, 0, len(outputs))
+			for _, output := range outputs {
+				if str, ok := output.(string); ok {
+					item.Outputs = append(item.Outputs, str)
+				}
+			}
+		}
+	}
+	
+	return item, nil
+}
+
 
 // History represents execution history
 type History map[string]HistoryItem

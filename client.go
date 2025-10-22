@@ -54,7 +54,7 @@ func (c *Client) GetClientID() string {
 	return c.clientID
 }
 
-// QueuePrompt submits a workflow to the execution queue
+// QueuePrompt queues a workflow for execution
 func (c *Client) QueuePrompt(ctx context.Context, workflow Workflow, extraData map[string]interface{}) (*QueuePromptResponse, error) {
 	req := QueuePromptRequest{
 		Prompt:    workflow,
@@ -72,6 +72,16 @@ func (c *Client) QueuePrompt(ctx context.Context, workflow Workflow, extraData m
 	}
 
 	return &resp, nil
+}
+
+// QueuePromptFromFile loads a workflow from a JSON file and queues it for execution
+func (c *Client) QueuePromptFromFile(ctx context.Context, filepath string, extraData map[string]interface{}) (*QueuePromptResponse, error) {
+	workflow, err := LoadWorkflowFromFile(filepath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load workflow from file: %w", err)
+	}
+
+	return c.QueuePrompt(ctx, workflow, extraData)
 }
 
 // GetQueue retrieves the current queue status
