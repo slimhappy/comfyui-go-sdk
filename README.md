@@ -32,7 +32,7 @@ import (
     "context"
     "log"
     
-    comfyui "github.com/yourusername/comfyui-go-sdk"
+    comfyui "github.com/slimhappy/comfyui-go-sdk"
 )
 
 func main() {
@@ -60,7 +60,7 @@ import (
     "fmt"
     "log"
     
-    comfyui "github.com/yourusername/comfyui-go-sdk"
+    comfyui "github.com/slimhappy/comfyui-go-sdk"
 )
 
 func main() {
